@@ -7,12 +7,26 @@ import io.ktor.request.*
 import io.ktor.routing.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
+
+object Users : Table(){
+    val id = integer("UserID")
+    val username = text("Username")
+    val password = text("Password")
+}
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+
+    Database.connect("jdbc:sqlite:./CPSC-411-Project-DB.db", "org.sqlite.JDBC")
+//    transaction {
+//        SchemaUtils.createMissingTablesAndColumns(Users)
+//    }
+
     routing{
 
         //Template
@@ -35,7 +49,16 @@ fun Application.module(testing: Boolean = false) {
 
             val nObj = Json.decodeFromString<User>(paramsJsonStr)
 
-           if(nObj.userName.toString() == "test" && nObj.password == "123")
+            var isLogin = false
+
+            transaction {
+                isLogin = Users.select {
+                                             (Users.username.eq(nObj.username) and
+                                              Users.password.eq(nObj.password))
+                                        }.any()
+            }
+
+           if(isLogin)
            {
                var t = true
                call.respondText("$t",
@@ -47,6 +70,24 @@ fun Application.module(testing: Boolean = false) {
                call.respondText("$f",
                        status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
            }
+        }
+
+        post("/Database/register"){
+            println("Register")
+            val paramsJsonStr = call.receiveText()
+
+            val nObj = Json.decodeFromString<User>(paramsJsonStr)
+
+            transaction {
+                Users.insert {
+                    it[username] = nObj.username
+                    it[password] = nObj.password
+                }
+            }
+
+            var t = true
+            call.respondText("$t",
+                    status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
         }
 
     }
