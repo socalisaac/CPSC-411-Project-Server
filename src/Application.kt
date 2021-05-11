@@ -78,14 +78,20 @@ fun Application.module(testing: Boolean = false) {
 
             val nObj = Json.decodeFromString<User>(paramsJsonStr)
 
-            transaction {
-                Users.insert {
-                    it[username] = nObj.username
-                    it[password] = nObj.password
+            var t = true
+            try {
+                transaction {
+                    Users.insert {
+                        it[username] = nObj.username
+                        it[password] = nObj.password
+                    }
                 }
             }
+            catch (ex:Exception){
+                println("Error in register")
+                t = false
+            }
 
-            var t = true
             call.respondText("$t",
                     status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
         }
