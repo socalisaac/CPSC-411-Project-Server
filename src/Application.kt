@@ -12,16 +12,20 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object Users : Table(){
-    val id = integer("UserID")
+    val userID = integer("UserID").autoIncrement()
     val username = text("Username")
     val password = text("Password")
+
+    override val primaryKey = PrimaryKey(userID)
 }
 
 object Items : Table(){
-    val id = integer("itemId")
+    val itemID = integer("itemId").autoIncrement()
     val itemName = text("itemName")
     val itemQty = integer("itemQty")
     val itemPrice = integer("itemPrice")
+
+    override val primaryKey = PrimaryKey(itemID)
 }
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -31,25 +35,12 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module(testing: Boolean = false) {
 
     Database.connect("jdbc:sqlite:./CPSC-411-Project-DB.db", "org.sqlite.JDBC")
-//    transaction {
-//        SchemaUtils.createMissingTablesAndColumns(Users)
-//    }
+    transaction {
+        SchemaUtils.createMissingTablesAndColumns(Users)
+        SchemaUtils.createMissingTablesAndColumns(Items)
+    }
 
     routing{
-
-        //Template
-//        post("/MathService/add"){
-//            println("HERE")
-//            val paramsJsonStr = call.receiveText()
-//
-//            val nObj = Json.decodeFromString<NumbersToAdd>(paramsJsonStr)
-//
-//            var sum = nObj.NumOne + nObj.NumTwo
-//
-//            call.respondText("${sum}",
-//                    status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
-//
-//        }
 
         post("/Database/login"){
             println("Login")
@@ -123,7 +114,7 @@ fun Application.module(testing: Boolean = false) {
                         (Items.itemName.eq(nObj.itemName) and
                         Items.itemQty.eq(nObj.itemQty) and
                         Items.itemPrice.eq(nObj.itemPrice))
-                    }.single()[Items.id]
+                    }.single()[Items.itemID]
                 }
 
             }
@@ -167,7 +158,7 @@ fun Application.module(testing: Boolean = false) {
 
             transaction {
                 Items.selectAll().forEach {
-                    itemList.add(Item(it[Items.id], it[Items.itemName], it[Items.itemQty], it[Items.itemPrice]))
+                    itemList.add(Item(it[Items.itemID], it[Items.itemName], it[Items.itemQty], it[Items.itemPrice]))
                 }
             }
 
@@ -187,9 +178,9 @@ fun Application.module(testing: Boolean = false) {
 
             transaction {
                 Items.select {
-                    (Items.id eq nObj.itemId)
+                    (Items.itemID eq nObj.itemId)
                 }.forEach {
-                    itemList.add(Item(it[Items.id], it[Items.itemName], it[Items.itemQty], it[Items.itemPrice]))
+                    itemList.add(Item(it[Items.itemID], it[Items.itemName], it[Items.itemQty], it[Items.itemPrice]))
                 }
             }
 
@@ -198,16 +189,6 @@ fun Application.module(testing: Boolean = false) {
             call.respondText("$itemListStr",
                     status = HttpStatusCode.OK, contentType = ContentType.Application.Json)
 
-//            if(itemList.isNotEmpty())
-//            {
-//
-//            }
-//            else
-//            {
-//                var f = false
-//                call.respondText("$f",
-//                        status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
-//            }
         }
 
     }
