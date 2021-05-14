@@ -13,7 +13,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object Users : Table(){
     val userID = integer("UserID").autoIncrement()
-    val username = text("Username")
+    val username = text("Username").uniqueIndex()
     val password = text("Password")
 
     override val primaryKey = PrimaryKey(userID)
@@ -71,6 +71,33 @@ fun Application.module(testing: Boolean = false) {
            }
         }
 
+        post("/Database/checkLoginInfo"){
+            println("Checking Login Info")
+
+            val paramsJsonStr = call.receiveText()
+
+            val nObj = Json.decodeFromString<User>(paramsJsonStr)
+
+            var idValue = -1
+
+            try {
+                transaction {
+                    idValue = Users.select {
+                        (Users.username.eq(nObj.username) and
+                         Users.password.eq(nObj.password))
+                    }.single()[Users.userID]
+                }
+            }
+            catch (ex:Exception){
+                println("Error in register")
+                idValue = -1
+            }
+
+            call.respondText("$idValue",
+                    status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
+
+        }
+
         post("/Database/register"){
             println("Register")
             val paramsJsonStr = call.receiveText()
@@ -88,6 +115,30 @@ fun Application.module(testing: Boolean = false) {
             }
             catch (ex:Exception){
                 println("Error in register")
+                t = false
+            }
+
+            call.respondText("$t",
+                    status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
+        }
+
+        post("/Database/updateLoginInfo"){
+            println("Updating Info")
+            val paramsJsonStr = call.receiveText()
+
+            val nObj = Json.decodeFromString<User>(paramsJsonStr)
+
+            var t = true
+            try {
+                transaction {
+                    Users.update({Users.userID eq nObj.id}) {
+                        it[username] = nObj.username
+                        it[password] = nObj.password
+                    }
+                }
+            }
+            catch (ex:Exception){
+                println("Error in Updating Info")
                 t = false
             }
 
@@ -128,22 +179,23 @@ fun Application.module(testing: Boolean = false) {
         }
 
         post("/Database/editItem"){
-            println("Register")
+            println("Updating Item")
             val paramsJsonStr = call.receiveText()
 
-            val nObj = Json.decodeFromString<User>(paramsJsonStr)
+            val nObj = Json.decodeFromString<Item>(paramsJsonStr)
 
             var t = true
             try {
                 transaction {
-                    Users.insert {
-                        it[username] = nObj.username
-                        it[password] = nObj.password
+                    Items.update({Items.itemID eq nObj.itemId}) {
+                        it[itemName] = nObj.itemName
+                        it[itemQty] = nObj.itemQty
+                        it[itemPrice] = nObj.itemPrice
                     }
                 }
             }
             catch (ex:Exception){
-                println("Error in register")
+                println("Error in Updating Info")
                 t = false
             }
 
@@ -189,6 +241,25 @@ fun Application.module(testing: Boolean = false) {
             call.respondText("$itemListStr",
                     status = HttpStatusCode.OK, contentType = ContentType.Application.Json)
 
+        }
+
+        post("/Database/clearItemsTable") {
+            println("clearing Items Table")
+
+            var t = true
+            try{
+                transaction {
+                    SchemaUtils.drop(Items)
+                    SchemaUtils.createMissingTablesAndColumns(Items)
+                }
+            }
+            catch (ex:Exception){
+                println("Error in clearing Items Table")
+                t = false
+            }
+
+            call.respondText("$t",
+                    status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
         }
 
     }
