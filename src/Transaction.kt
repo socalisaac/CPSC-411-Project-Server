@@ -7,21 +7,23 @@ class Transaction {
     var id : Int = 0
     var itemSoldName : String = ""
     var itemSoldQty : Int = 0
-    var revenue : Int = 0
-    var dateOfTransaction : String = ""
+    var revenue : Long = 0
+    //Date stored using System.currentTimeMillis()
+    var date : Long = 0
 
-    constructor(itemSoldName: String, itemSoldQty: Int, revenue : Int, dateOfTransaction : String){
+    constructor(itemSoldName: String, itemSoldQty: Int, revenue : Long, date : Long){
         this.itemSoldName = itemSoldName
         this.itemSoldQty = itemSoldQty
         this.revenue = revenue
-        this.dateOfTransaction = dateOfTransaction
+        this.date = date
     }
 
-    constructor(id : Int, itemSoldName: String, itemSoldQty: Int, revenue : Int, dateOfTransaction : String){
+    constructor(id : Int, itemSoldName: String, itemSoldQty: Int, revenue : Long, date : Long){
         this.id = id
         this.itemSoldName = itemSoldName
         this.itemSoldQty = itemSoldQty
         this.revenue = revenue
-        this.dateOfTransaction = dateOfTransaction
+        this.date = date
     }
+
 }

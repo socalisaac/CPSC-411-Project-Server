@@ -8,6 +8,7 @@ import io.ktor.routing.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.csuf.cpsc.test1.Users.uniqueIndex
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -21,7 +22,7 @@ object Users : Table(){
 
 object Items : Table(){
     val itemID = integer("itemId").autoIncrement()
-    val itemName = text("itemName")
+    val itemName = text("itemName").uniqueIndex()
     val itemQty = integer("itemQty")
     val itemPrice = integer("itemPrice")
 
@@ -32,8 +33,8 @@ object Transactions : Table(){
     val transactionID = integer("transactionId").autoIncrement()
     val itemSoldName = text("itemSoldName")
     val itemSoldQty = integer("itemSoldQty")
-    val revenue = integer("revenue")
-    val dateOfTransaction = text("dateOfTransaction")
+    val revenue = long("revenue")
+    val dateOfTransaction = long("dateOfTransaction")
 
     override val primaryKey = PrimaryKey(transactionID)
 }
@@ -303,14 +304,14 @@ fun Application.module(testing: Boolean = false) {
                         it[itemSoldName] = nObj.itemSoldName
                         it[itemSoldQty] = nObj.itemSoldQty
                         it[revenue] = nObj.revenue
-                        it[dateOfTransaction] = nObj.dateOfTransaction
+                        it[dateOfTransaction] = nObj.date
                     }
 
                     t = Transactions.select {
                        (Transactions.itemSoldName.eq(nObj.itemSoldName) and
                         Transactions.itemSoldQty.eq(nObj.itemSoldQty) and
                         Transactions.revenue.eq(nObj.revenue) and
-                        Transactions.dateOfTransaction.eq(nObj.dateOfTransaction))
+                        Transactions.dateOfTransaction.eq(nObj.date))
                     }.single()[Transactions.transactionID]
                 }
             }

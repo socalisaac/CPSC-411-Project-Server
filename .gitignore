@@ -5,3 +5,5 @@
 *.iml
 *.ipr
 *.iws
+CPSC-411-Project-DB.db
+local.properties
