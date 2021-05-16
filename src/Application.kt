@@ -28,6 +28,16 @@ object Items : Table(){
     override val primaryKey = PrimaryKey(itemID)
 }
 
+object Transactions : Table(){
+    val transactionID = integer("transactionId").autoIncrement()
+    val itemSoldName = text("itemSoldName")
+    val itemSoldQty = integer("itemSoldQty")
+    val revenue = integer("revenue")
+    val dateOfTransaction = text("dateOfTransaction")
+
+    override val primaryKey = PrimaryKey(transactionID)
+}
+
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("unused") // Referenced in application.conf
@@ -38,6 +48,7 @@ fun Application.module(testing: Boolean = false) {
     transaction {
         SchemaUtils.createMissingTablesAndColumns(Users)
         SchemaUtils.createMissingTablesAndColumns(Items)
+        SchemaUtils.createMissingTablesAndColumns(Transactions)
     }
 
     routing{
@@ -256,6 +267,56 @@ fun Application.module(testing: Boolean = false) {
             catch (ex:Exception){
                 println("Error in clearing Items Table")
                 t = false
+            }
+
+            call.respondText("$t",
+                    status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
+        }
+
+        post("/Database/getTransactionTable"){
+            println("Getting Items")
+
+            var transactionList: MutableList<Transaction> = mutableListOf()
+
+            transaction {
+                Transactions.selectAll().forEach {
+                      transactionList.add(Transaction(it[Transactions.transactionID], it[Transactions.itemSoldName], it[Transactions.itemSoldQty], it[Transactions.revenue], it[Transactions.dateOfTransaction]))
+                }
+            }
+
+            val transactionListStr = Json.encodeToString(transactionList)
+
+            call.respondText("$transactionListStr",
+                    status = HttpStatusCode.OK, contentType = ContentType.Application.Json)
+        }
+
+        post("/Database/addTransaction"){
+            println("Adding Item")
+            val paramsJsonStr = call.receiveText()
+
+            val nObj = Json.decodeFromString<Transaction>(paramsJsonStr)
+
+            var t = -1
+            try {
+                transaction {
+                    Transactions.insert {
+                        it[itemSoldName] = nObj.itemSoldName
+                        it[itemSoldQty] = nObj.itemSoldQty
+                        it[revenue] = nObj.revenue
+                        it[dateOfTransaction] = nObj.dateOfTransaction
+                    }
+
+                    t = Transactions.select {
+                       (Transactions.itemSoldName.eq(nObj.itemSoldName) and
+                        Transactions.itemSoldQty.eq(nObj.itemSoldQty) and
+                        Transactions.revenue.eq(nObj.revenue) and
+                        Transactions.dateOfTransaction.eq(nObj.dateOfTransaction))
+                    }.single()[Transactions.transactionID]
+                }
+            }
+            catch (ex:Exception){
+                println("Error in Add Transaction")
+                t = -1
             }
 
             call.respondText("$t",
