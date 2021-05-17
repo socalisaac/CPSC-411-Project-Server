@@ -275,7 +275,7 @@ fun Application.module(testing: Boolean = false) {
         }
 
         post("/Database/getTransactionTable"){
-            println("Getting Items")
+            println("Getting Transactions")
 
             var transactionList: MutableList<Transaction> = mutableListOf()
 
@@ -322,6 +322,25 @@ fun Application.module(testing: Boolean = false) {
 
             call.respondText("$t",
                     status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
+        }
+
+        post("/Database/clearTransactionsTable") {
+            println("clearing Transactions Table")
+
+            var t = true
+            try{
+                transaction {
+                    SchemaUtils.drop(Transactions)
+                    SchemaUtils.createMissingTablesAndColumns(Transactions)
+                }
+            }
+            catch (ex:Exception){
+                println("Error in clearing Transactions Table")
+                t = false
+            }
+
+            call.respondText("$t",
+                status = HttpStatusCode.OK, contentType = ContentType.Text.Plain)
         }
 
     }
